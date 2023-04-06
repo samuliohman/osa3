@@ -20,15 +20,6 @@ const persons = [
         number: '39-23-6423122'
     },
 ]
-/*
-const info = () => {
-    return (
-        <div>
-            <p>Phonebook has {persons.length}</p>
-            <p>{new Date()}</p>
-        </div>
-    )
-}*/
 
 app.get('/info', (request, response) => {
     response.send(`<div>Phonebook has info for ${persons.length} people</div>` +
@@ -36,7 +27,17 @@ app.get('/info', (request, response) => {
 })
 
 app.get('/api/persons', (request, response) => {
-    response.send(persons)
+    response.json(persons)
+})
+
+app.get('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id)
+    const info = persons.find(person => person.id === id)
+    if (info) {
+        response.json(info)
+    } else {
+        response.status(404).end()
+    }
 })
 
 const PORT = 3001
