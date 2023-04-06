@@ -20,9 +20,19 @@ const persons = [
         number: '39-23-6423122'
     },
 ]
+/*
+const info = () => {
+    return (
+        <div>
+            <p>Phonebook has {persons.length}</p>
+            <p>{new Date()}</p>
+        </div>
+    )
+}*/
 
-app.get('/', (request, response) => {
-    response.send('<h1>My own server!</h1>')
+app.get('/info', (request, response) => {
+    response.send(`<div>Phonebook has info for ${persons.length} people</div>` +
+        `<div>${new Date()}</div>`)
 })
 
 app.get('/api/persons', (request, response) => {
