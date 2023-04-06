@@ -58,12 +58,18 @@ app.post('/api/persons', (request, response) => {
     }
     body = request.body
     if (!body.name) {
-        return response.status(400).json({ error: 'Name missing.' })
+        return response.status(400).json({ error: 'Name is missing.' })
+    }
+    if (persons.map(p => p.name).includes(body.name)) {
+        return response.status(400).json({ error: 'Name must be unique.' })
+    }
+    if (!body.number) {
+        return response.status(400).json({ error: 'Number is missing.' })
     }
     person = {
         id: newId,
         name: body.name,
-        number: body.number || 'Missing'
+        number: body.number
     }
 
     persons = persons.concat(person)
