@@ -1,7 +1,7 @@
 const express = require('express')
 const app = express()
 
-const persons = [
+var persons = [
     {
         id: 1,
         name: 'Arto Hellas',
@@ -38,6 +38,15 @@ app.get('/api/persons/:id', (request, response) => {
     } else {
         response.status(404).end()
     }
+})
+
+app.delete('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id)
+    if (!persons.map(p => p.id).includes(id)) {
+        return response.status(404).end()
+    }
+    persons = persons.filter(person => person.id !== id)
+    response.status(204).end()
 })
 
 const PORT = 3001
