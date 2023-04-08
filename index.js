@@ -17,6 +17,8 @@ const errorHandler = (error, request, response, next) => {
 
     if (error.name === 'CastError') {
         return response.status(400).send({ error: 'malformatted id' })
+    } else if (error.name === 'ValidationError') {
+        return response.status(400).json({ error: error.message })
     }
     next(error)
 }
@@ -59,20 +61,16 @@ app.delete('/api/persons/:id', (request, response, next) => {
 })
 
 app.post('/api/persons', (request, response, next) => {
-    body = request.body
-    if (!body.name)
-        return response.status(400).json({ error: 'Name is missing.' })
-    else if (!body.number)
-        return response.status(400).json({ error: 'Number is missing.' })
+    const body = request.body
+    const person = new Person({
+        name: body.name,
+        number: body.number
+    })
 
     Person.find({}).then(persons => {
         if (persons.map(p => p.name).includes(body.name)) {
             return response.status(400).json({ error: 'Name must be unique.' })
         }
-        const person = new Person({
-            name: body.name,
-            number: body.number
-        })
         person.save().then(savedPerson => {
             response.json(savedPerson)
         }).catch(error => next(error))
@@ -80,14 +78,16 @@ app.post('/api/persons', (request, response, next) => {
 })
 
 app.put('/api/persons/:id', (request, response, next) => {
-    const person = {
-        name: request.body.name,
-        number: request.body.number,
-    }
+    const { name, number } = request.body
 
-    Person.findByIdAndUpdate(request.params.id, person, { new: true })
-        .then(result => response.json(result))
-        .catch(error => next(error))
+    Person.findByIdAndUpdate(
+        request.params.id,
+        { name, number },
+        { new: true, runValidators: true, context: 'query' }
+    )
+        .then(result =>
+            response.json(result)
+        ).catch(error => next(error))
 })
 
 //Olemattomien osoitteiden ja virheiden käsittely
