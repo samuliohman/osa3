@@ -7,7 +7,7 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build:ui": "rm -r build && cd C:/Users/samul/Desktop/fullstack/osa2/puhelinluettelo && npm run build && cp -r build C:/Users/samul/Desktop/fullstack/osa3",
+    "build:ui": "rmdir /s build && cd C:/Users/samul/Desktop/fullstack/osa2/puhelinluettelo && npm run build && Xcopy \"./build\" \"C:/Users/samul/Desktop/fullstack/osa3/build\" /E",
     "deploy": "fly deploy",
     "deploy:full": "npm run build:ui && npm run deploy",
     "logs:prod": "fly logs"
