@@ -4,59 +4,49 @@ const morgan = require('morgan')
 const cors = require('cors')
 const Person = require('./models/person')
 
+const token = morgan.token('data', function (req, res) {
+    return Object.keys(req.body).length === 0 ? "" : JSON.stringify(req.body)
+})
+
+const unknownEndpoint = (request, response) => {
+    response.status(404).send({ error: 'unknown endpoint' })
+}
+
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+
+    if (error.name === 'CastError') {
+        return response.status(400).send({ error: 'malformatted id' })
+    }
+    next(error)
+}
+
 const app = express()
 app.use(cors())
 app.use(express.static('build'))
 app.use(express.json())
-const token = morgan.token('data', function (req, res) {
-    return Object.keys(req.body).length === 0 ? "" : JSON.stringify(req.body)
-})
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :data'))
 
-/*
-var persons = [
-    {
-        id: 1,
-        name: 'Arto Hellas',
-        number: '040-123456'
-    }, {
-        id: 2,
-        name: 'Ada Lovelace',
-        number: '39-44-5323523'
-    }, {
-        id: 3,
-        name: 'Dan Abramov',
-        number: '12-34-234345'
-    }, {
-        id: 4,
-        name: 'Mary Peppendick',
-        number: '39-23-6423122'
-    },
-]*/
-
-app.get('/info', (request, response) => {
-    response.send(`<div>Phonebook has info for ${persons.length} people</div>` +
-        `<div>${new Date()}</div>`)
+app.get('/info', (request, response, next) => {
+    Person.find({}).then(persons => {
+        response.send(`<div>Phonebook has info for ${persons.length} people</div>` +
+            `<div>${new Date()}</div>`)
+    }).catch(error => next(error))
 })
 
-app.get('/api/persons', (request, response) => {
+app.get('/api/persons', (request, response, next) => {
     Person.find({}).then(persons => {
         response.json(persons)
-    })
+    }).catch(error => next(error))
 })
 
-app.get('/api/persons/:id', (request, response) => {
+app.get('/api/persons/:id', (request, response, next) => {
     Person.findById(request.params.id).then(person => {
-        response.json(person)
-    })
-    /*
-    const id = Number(request.params.id)
-    const info = persons.find(person => person.id === id)
-    if (info) {
-        response.json(info)
-    } else {
-        response.status(404).end()
-    }*/
+        if (person)
+            return response.json(person)
+        else
+            return response.status(404).end()
+    }).catch(error => next(error))
 })
 
 app.delete('/api/persons/:id', (request, response, next) => {
@@ -68,27 +58,41 @@ app.delete('/api/persons/:id', (request, response, next) => {
     }).catch(error => next(error))
 })
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
     body = request.body
-    if (!body.name) {
+    if (!body.name)
         return response.status(400).json({ error: 'Name is missing.' })
-    }
-
-    /*    if (persons.map(p => p.name).includes(body.name)) {
-            return response.status(400).json({ error: 'Name must be unique.' })
-        }*/
-    if (!body.number) {
+    else if (!body.number)
         return response.status(400).json({ error: 'Number is missing.' })
-    }
-    const person = new Person({
-        name: body.name,
-        number: body.number
-    })
 
-    person.save().then(savedPerson => {
-        response.json(savedPerson)
-    })
+    Person.find({}).then(persons => {
+        if (persons.map(p => p.name).includes(body.name)) {
+            return response.status(400).json({ error: 'Name must be unique.' })
+        }
+        const person = new Person({
+            name: body.name,
+            number: body.number
+        })
+        person.save().then(savedPerson => {
+            response.json(savedPerson)
+        }).catch(error => next(error))
+    }).catch(error => next(error))
 })
+
+app.put('/api/persons/:id', (request, response, next) => {
+    const person = {
+        name: request.body.name,
+        number: request.body.number,
+    }
+
+    Person.findByIdAndUpdate(request.params.id, person, { new: true })
+        .then(result => response.json(result))
+        .catch(error => next(error))
+})
+
+//Olemattomien osoitteiden ja virheiden käsittely
+app.use(unknownEndpoint)
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 
